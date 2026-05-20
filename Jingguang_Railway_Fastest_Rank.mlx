@@ -1,0 +1,63 @@
+%计算京广高铁下行方向（往广州）三趟全程标杆车的地位
+%从停靠站点，停站时间，出发时间段等角度进行加权
+1.车站重要性
+platforms=station.platform;
+citylevel=station.level;
+trainstop=station.train_stop;
+
+w_plat=0.3;
+w_city=0.5;
+w_stop=0.2;
+
+min_max=@(x) (x-min(x))./(max(x)-min(x)+eps);
+
+plat_norm=min_max(platforms);
+city_norm=min_max(citylevel);
+stop_norm=min_max(trainstop);
+
+sta_importance=w_plat.*plat_norm+city_norm.*city_norm+stop_norm.*trainstop;
+station.sta_importance=sta_importance;
+train.plat_name=string(train.plat_name);
+train=join(train,station(:,{'plat_name','sta_importance'}),'Keys','plat_name');
+2.时间段
+%train.depart = datetime(train.depart, 'InputFormat','HH:mm');
+[~,idx_start]=unique(train.ID);
+first_stop=train(idx_start,:);
+hourDep=hour(first_stop.depart);
+time_Weigh = ones(height(first_stop),1);
+time_Weigh(hourDep>=6 & hourDep<9) = 1.25;
+time_Weigh(hourDep>=9 & hourDep<12) = 1.10;
+time_Weigh(hourDep>=12 & hourDep<16) = 1.00;
+time_Weigh(hourDep>=16 & hourDep<19) = 1.20;
+time_Weigh(hourDep>=19 & hourDep<22) = 0.95;
+time_Weigh(hourDep>=22 | hourDep<6) = 0.80;
+3.结果数组创建
+id=unique(train.ID);
+result={id(1),0;id(2),0;id(3),0};
+4.停站总数计算
+k1=find(train.ID=='G301');
+m1=sum(train(k1,:).sta_importance);
+k2=find(train.ID=='G303');
+m2=sum(train(k2,:).sta_importance);
+k3=find(train.ID=='G305');
+m3=sum(train(k3,:).sta_importance);
+5.停站惩罚因子
+num=[length(k1),length(k2),length(k3)];
+pnum=zeros(1,3);
+punish=7;
+for i=1:3
+    if num(i)<7
+        pnum(i)=1.2;
+    elseif num(i)==7
+        pnum(i)=1.0
+    else
+        pnum(i)=0.8;
+    end
+end
+m1=m1*pnum(1);
+m2=m2*pnum(2);
+m3=m3*pnum(3);
+6.结果统计
+result(1,2)={m1};
+result(2,2)={m2};
+result(3,2)={m3};
