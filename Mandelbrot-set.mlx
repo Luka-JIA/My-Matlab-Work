@@ -1,0 +1,25 @@
+%创建一个曼德勃罗集，并用不同颜色呈现
+x=linspace(-2,1,1000);
+y=linspace(-1.5,1.5,1000);
+[X,Y]=meshgrid(x,y);
+Y=flipud(Y);
+Z0=X+1i*Y;
+
+[m,n]=size(Z0);
+K=zeros(m,n);
+
+for k1=1:m
+    for k2=1:n
+        z0=Z0(k1,k2);
+        z=z0;
+        k=1;
+        while abs(z)<=2 && k<32
+            z=z^2+z0;
+            k=k+1;
+        end
+        K(k1,k2)=k;
+    end
+end
+
+image(K);
+colormap(jet(32));
