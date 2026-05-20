@@ -1,0 +1,15 @@
+%泰勒展式代码
+function y=taylor(x,a)
+    y=1;
+    term=1;
+    n=0;
+    while abs(term)>=10e-8
+        term=term*(a-n)*x/(n+1);
+        n=n+1;
+        y=y+term;
+    end
+end
+x=input('x=');
+a=input('a=');
+y=taylor(x,a);
+disp(y);
