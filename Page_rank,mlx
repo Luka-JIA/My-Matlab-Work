@@ -1,0 +1,26 @@
+%PageRank算法实现
+i=[1,1,2,2,3,4,5,6];
+j=[2,3,3,4,4,1,6,5];
+G=sparse(i,j,1,6,6);%构建邻接矩阵
+U={'alpha','beta','gamma','delta','sigma','rhe'};
+n=length(U);
+p=0.85;%限定回搜概率
+c=sum(G,1);%沿着G矩阵第一维度（行）求和——求每一列的和
+k=find(c);%列内求和不为0的索引（每一列求和结果代表该网页被回搜次数）
+D=sparse(k,k,1./c(k),n,n);
+e=ones(n,1);
+z=(1-p)/6*(c~=0)+1/n*(c==0);
+
+x=e;
+for k=1:50
+ x=p*G*D*x+e*(z*x);
+end
+x=x/sum(x);
+
+[x_sorted, idx] = sort(x, 'descend');
+R = cell(n+1, 4);
+R(1,:) = {'Rank', 'PR 值', '原节点', 'URL'};
+R(2:end, 1) = num2cell((1:n)'); 
+R(2:end, 2) = num2cell(round(x_sorted, 4)); 
+R(2:end, 3) = num2cell(idx(:)); 
+R(2:end, 4) = U(idx)';
