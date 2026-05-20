@@ -1,0 +1,150 @@
+CR400AF样车运行性能
+1.基本数据
+%车辆参数
+……        
+2.牵引力函数
+function F=traction_force(v,train)
+    v_kmh=v*3.6;
+    if v<=train.v_turn
+        F=train.Fmax;
+    else
+        F=train.p/v;
+        F=min(F,train.Fmax);
+    end
+end
+3.阻力函数
+function f_res=resistance(v,train)
+    f_air=0.5*train.rho_air*train.Cd*train.A*v^2;
+    f_mech=5000+30*v;
+    f_res=f_air+f_mech;
+end
+4.制动力函数
+function B = braking_force(v,train)
+    v_max=v*3.6;
+    if v<=250
+        B=train.m*train.a_brake;
+    else
+        B=train.m*(1.0+(v-250)*0.005);
+    end
+     %B = train.m * train.a_brake;
+end
+5.运动方程
+function dydt=equations_acc(t,y,train)
+    v=y(2);
+    F_t=traction_force(v,train);
+    R=resistance(v,train);
+    F_net=F_t-R;
+    a=F_net/train.m;
+    dydt=[v;a];
+end
+
+function dydt=equations_dec(t,y,train)
+    v=y(2);
+    B=braking_force(v,train);
+    R=resistance(v,train);
+    F_net=-B-R;
+    a=F_net/train.m;
+    dydt=[v;a];
+end
+加速曲线
+x0=0;
+v0=0;
+t0=0;
+t_span1=[0:0.1:1000];
+[t1,y1]=ode45(@(t,y) equations_acc(t,y,train),t_span1,[x0;v0]);
+v1=y1(:,2);
+idx_max=find(v1>=train.v_max,1);
+if isempty(idx_max)
+    error('加速阶段未达速，请修改加速时间t_span1');
+end
+t_acc=t1(idx_max);
+y_acc=y1(1:idx_max,:);
+恒速曲线
+v_acc = y_acc(:,2);
+idx_end_acc = find(v_acc >= train.v_max, 1);
+t_acc_end = t_acc;
+x_acc_end = y_acc(idx_end_acc, 1);
+v_acc_end = y_acc(idx_end_acc, 2);
+x_acc = y_acc(1:idx_end_acc, 1);
+v_acc = y_acc(1:idx_end_acc, 2);
+
+t_cruise_start = t_acc_end;
+t_cruise_end = t_cruise_start + train.t_cruise;
+t_cruise = linspace(t_cruise_start, t_cruise_end, 100);
+x_cruise = x_acc_end + train.v_cruise * (t_cruise - t_cruise_start);
+v_cruise = ones(size(t_cruise)) * train.v_cruise;
+减速曲线
+x_start=x_cruise(end);
+v_start=v_cruise(end);
+t_span2=[t_cruise_end,t_cruise_end+500];
+
+options = odeset('Events', @(t,y) stopWhenStopped(t,y));
+function [value, isterminal, direction] = stopWhenStopped(t, y)
+    v = y(2);
+    value = v;           
+    isterminal = 1;        
+    direction = -1;        
+end
+
+[t2,y2]=ode45(@(t,y) equations_dec(t,y,train),t_span2,[x_start;v_start],options);
+
+t_all=[t1(1:idx_max);t_cruise(:);t2];
+x_all=[y_acc(:,1);x_cruise(:);y2(:,1)];
+v_all=[y_acc(:,2);v_cruise(:);y2(:,2)];
+6.牵引能耗
+v_acc=y_acc(:,2);
+F_t_acc=arrayfun(@(v) traction_force(v,train),v_acc);
+P_t=F_t_acc.*v_acc;
+E_trac_J=trapz(t1(1:idx_max),P_t);
+E_trac_kWh=E_trac_J/3.6e6;
+E_input=E_trac_kWh/train.ele_eff;
+7.再生制动回收能量
+v_brake=y2(:,2);
+t_brake=t2;
+B_brake=arrayfun(@(v) braking_force(v,train),v_brake);
+P_brake_mech=B_brake.*v_brake;
+E_brake_mech_J=trapz(t_brake,P_brake_mech);
+E_brake_mech_kWh=E_brake_mech_J/3.6e6;
+E_regen=E_brake_mech_kWh*train.re_eff;
+绘制曲线
+%figure;
+%subplot(2,2,1);
+plot(t_all,v_all*3.6,'LineWidth',1.5);
+xlabel('时间(s)');
+ylabel('速度(km/h)');
+title('速度-时间曲线');
+grid on;
+标记
+line([t_acc_end, t_acc_end], [0, train.v_cruise*3.6], 'Color', 'r', 'LineStyle', '--');
+line([t_cruise_end, t_cruise_end], [0, train.v_cruise*3.6], 'Color', 'r', 'LineStyle', '--');
+text(t_acc_end/2, train.v_cruise*3.6*0.5, '加速段', 'HorizontalAlignment', 'center');
+text((t_acc_end+t_cruise_end)/2, train.v_cruise*3.6*0.9, '巡航段', 'HorizontalAlignment', 'center');
+text(t_cruise_end + (t_all(end)-t_cruise_end)/2, train.v_cruise*3.6*0.5, '减速段', 'HorizontalAlignment', 'center');
+路程-速度
+%subplot(2,2,2);
+plot(x_all/1000,v_all*3.6,'LineWidth',1.5);
+xlabel('路程(km)');
+ylabel('速度(km/h)');
+title('速度-路程曲线');
+grid on;
+
+%subplot(2,2,3);
+F_t_all = arrayfun(@(v) traction_force(v, train), v_all(1:idx_max));
+R_all = arrayfun(@(v) resistance(v, train), v_all);
+B_all= arrayfun(@(v) braking_force(v, train), v_all(idx_max:end));
+plot(t_all(1:idx_max), F_t_all/1e3, t_all, R_all/1e3, t_all(idx_max:end), B_all/1e3, 'LineWidth', 1.5);
+xlabel('时间 (s)');
+ylabel('力 (kN)');
+legend('牵引力', '阻力', '制动力'); 
+grid on;
+bar([E_input,E_regen,E_input-E_regen]);
+set(gca,'XTicklabel',{'牵引耗能', '再生回收', '净能耗'});
+ylabel('能耗（kWh）');
+title('加减速阶段能耗分析');
+grid on;
+结果输出
+fprintf('加速阶段耗时：%.2f s\n',t_acc);
+fprintf('制动距离: %.2f km\n', (x_all(end)-x_all(find(t_all>=t_acc,1)))/1000);
+fprintf('牵引输入电能: %.1f kWh\n', E_input);
+fprintf('再生回收电能: %.1f kWh\n', E_regen);
+fprintf('净能耗: %.1f kWh\n', E_input - E_regen);
