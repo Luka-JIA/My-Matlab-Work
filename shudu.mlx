@@ -1,0 +1,23 @@
+%该函数用于补充9x9的数独
+function shuduu(m,X)
+i=ceil(m/9);
+j=m-9*(i-1);
+if(m>81)
+    disp(X);
+    fprintf('\n');
+        return;
+elseif X(i,j)~=0
+    shuduu(m+1,X);
+else
+    X1=X(3*(ceil(i/3)-1)+(1:3),3*(ceil(j/3)-1)+(1:3));
+    for k=1:9
+        if ~any(X(i,:)==k)&&~any(X(:,j)==k)&&~any(any(X1==k))%第i行第j列没有k这个元素
+            X(i,j)=k;
+            shuduu(m+1,X);
+        end
+    end
+end
+end
+X=zeros(9,9);
+shuduu(1,X);
+disp(X);
