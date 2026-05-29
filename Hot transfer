@@ -17,7 +17,7 @@ temp(n0,t0)=100;
 
 %函数实现
 F=alpha*Delt/(Delx)^2;
-for t=1:tstep 
+for t=1:tstep                                                              
     for n=2:N-1 
         temp(n,t+1)=temp(n,t)+F*[temp(n+1,t)-2*temp(n,t)+temp(n-1,t)];
     end
@@ -33,3 +33,5 @@ for t=1:tstep+1
     drawnow;
     pause(2);
 end
+%error：步长起点和终点设置错误，对自己设置的基础数据不熟悉
+%error：画图时逻辑混乱，没有分清楚横纵坐标轴范围
