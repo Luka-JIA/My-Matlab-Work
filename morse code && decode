@@ -1,0 +1,97 @@
+题1函数：编写能对单词或句子进行摩尔斯编码的函数 [code]=encode_bfs_string(string)
+function [code]=encode_bfs_string(s)
+    code=[];
+    n=length(s);
+    for i=1:n
+        if s(i)==' '
+            code=[code,' '];
+            continue;
+        end
+        M=morse_tree;
+        m={M};
+        d={''};
+        while ~isempty(m)
+            node=m{1};
+            m=m(2:end);
+            cod=d{1};
+            d=d(2:end);
+            if ~isempty(node)
+                if node{1}==s(i)
+                    code=[code,cod,' '];
+                    break;
+                else
+                    m=[m,node(3),node(2)];
+                    d=[d,{[cod '-']},{[cod '.']}];
+                end
+            end
+        end
+    end
+end
+题2函数：编写能将编码还原为字符串的函数[string]=decode_string(code)
+function [string]=decode_string(code)
+    string=[];
+    M=morse_tree;
+    for i=1:length(code)
+        if code(i)==' '
+            string=[string,M{1},' '];
+            M=morse_tree;
+            continue;
+        elseif code(i)=='  '
+            string=[string,M{1},' '];
+            M=morse_tree;
+            continue;
+        else
+            if code(i)=='.'
+                M=M{2};
+            elseif code(i)=='-'
+                M=M{3};
+            end
+        end
+        
+    end
+end
+可使用的局部函数：摩尔斯编码树
+function M = morse_tree
+% MORSE_TREE
+% M = morse_tree is a cell array of cell arrays, the binary
+% tree for the Morse code of the 26 Latin characters.
+%   Copyright 2014 Cleve Moler
+%   Copyright 2014 The MathWorks, Inc.
+
+% Level 4
+h = {'H' {} {}};
+v = {'V' {} {}};
+f = {'F' {} {}};
+l = {'L' {} {}};
+p = {'P' {} {}};
+j = {'J' {} {}};
+b = {'B' {} {}};
+x = {'X' {} {}};
+c = {'C' {} {}};
+y = {'Y' {} {}};
+z = {'Z' {} {}};
+q = {'Q' {} {}};
+
+% Level 3
+s = {'S' h v};
+u = {'U' f {}};
+r = {'R' l {}};
+w = {'W' p j};
+d = {'D' b x};
+k = {'K' c y};
+g = {'G' z q};
+o = {'O' {} {}};
+
+% Level 2
+i = {'I' s u};
+a = {'A' r w};
+n = {'N' d k};
+m = {'M' g o};
+
+% Level 1
+e = {'E' i a};
+t = {'T' n m};
+
+% Level 0
+M = {'' e t};
+end
