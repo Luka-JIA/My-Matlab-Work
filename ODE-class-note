@@ -1,0 +1,48 @@
+常微分
+function [t,y]=ode_Euler(f,tspan,c)
+a=tspan(1);
+b=tspan(2);
+n=1000;
+t=linspace(a,b,n+1);
+y=zeros(1,n+1);
+y(1)=c;
+h=(b-a)/n;
+for k=1:n
+    y(k+1)=y(k)+h*f(t(k),y(k));
+end
+end
+f=@(t,y)(1-20/y);
+tspan=[0,8];
+c=1;
+[t,y]=ode_Euler(f,tspan,c);
+plot(t,y,'b-',t,20*exp(t)./(exp(1)+19),'r--')
+刚性常微分
+f=@(t,y)(-1000*y);
+tspan=[0,8];
+c=1;
+[t,y]=ode_Euler(f,tspan,c);
+plot(t,y,'b-',t,exp(-100*t),'r--');
+捕食者
+function [t,y]=ode_Euler1(f,tspan,c)
+a=tspan(1);
+b=tspan(2);
+n=1000;
+t=linspace(a,b,n+1);
+y=zeros(2,n+1);
+y(:,1)=c;
+h=(b-a)/n;
+for k=1:n
+    y(:,k+1)=y(:,k)+h*f(t(k),y(:,k));
+end
+end
+%f2=@(t,y)([1-y(2)/100*y(1);-1-y(1)/200*y(2)]);
+%tsapn=[0,2*pi];
+%c2=[400;100];
+%[t,y]=ode_Euler1(f2,tspan,c2);
+%plot(t,y(:,1),t,y(:,2));
+高阶常微分方程可分为一阶常微分方程
+%f3=@(t,y)([y(2);-1+(y(2))^2]);
+%tsapn=[0,2];
+%c3=[1;0];
+%[t,y]=ode_Euler1(f3,tspan,c3);
+%plot(t,y(:,1));
