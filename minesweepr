@@ -1,0 +1,128 @@
+function minesweepr
+    %基础数据
+    rows=8;
+    cols=8;
+    totalmine=9;
+
+    %创造游戏数据记录矩阵
+    minemap=zeros(rows,cols);%数据图
+    statemap=zeros(rows,cols);%状态图，1为翻开，2为插旗(不会)
+
+    %背景图
+    for k1=1:rows
+        for k2=1:cols
+            showmap(k1,k2)=uicontrol('style','pushbutton','units','normalized','position',[0.12+(k2-1)*0.1,0.8-(k1-1)*0.1,0.1,0.1]);
+            set(showmap(k1,k2),'callback',@mymove_left,'ButtonDownFcn',@mymove_right);
+        end
+    end
+    T=uicontrol('style','text','string','IN PLAY','fontsize',10,'units','normalized','position',[0.05,0.05,0.3,0.05]);
+    
+    %布设地雷(有地雷的数据记录为-1)
+    r=randperm(rows*cols);
+    mine_place=r(1:totalmine);
+    minemap(mine_place)=-1;
+
+    %计算附近地雷数
+    for i=1:rows
+        for j=1:cols
+            if minemap(i,j)~=-1
+                count=0;
+                for di=-1:1
+                    for dj=-1:1
+                        ni=i+di;
+                        nj=j+dj;
+                        if ni>=1 && ni<=rows && nj>=1 && nj<=cols
+                            if minemap(ni,nj)==-1
+                                count=count+1;
+                            end
+                        end
+                    end
+                end
+                minemap(i,j)=count;
+            end
+        end
+    end
+
+    %左键按钮回调
+    function mymove_left(h1,h2)
+        [i,j]=find(showmap==h1);
+        if statemap(i, j) == 1 || statemap(i,j)==2
+            return;
+        end
+
+        if minemap(i,j)==-1
+            showmap(i,j).BackgroundColor=[0,0,0];
+            T.String=('你踩到地雷了！游戏结束');
+            return;
+        end
+
+        if minemap(i,j)==0
+            expand(i,j);
+        else
+            showmap(i,j).String=num2str(minemap(i,j));
+            showmap(i,j).Enable='off';
+            statemap(i,j)=1;
+        end
+
+        if win()
+            T.String('恭喜你，胜利了！');
+        end
+    end
+    
+    %右键按钮回调
+    function mymove_right(h1,h2)
+        [i,j]=find(showmap==h1);
+        if statemap(i,j)==0
+            set(showmap(i,j),'String','?');
+            showmap(i,j).Enable='off';
+            statemap(i,j)=2;
+        elseif statemap(i,j)==2
+            set(showmap(i,j),'String',' ');
+            showmap(i,j).Enable='on';
+            statemap(i,j)=0;
+        end
+    end
+
+
+
+
+    function expand(i,j)
+        if i<1 || i>rows || j<1 || j>cols
+            return;
+        end
+
+        if statemap(i,j)==1 || statemap(i,j)==2
+            return;
+        end
+
+        showmap(i,j).String=num2str(minemap(i,j));
+        showmap(i,j).Enable='off';
+        statemap(i,j)=1;    
+
+        if minemap(i,j)==0
+            for di=-1:1
+                for dj=-1:1
+                    expand(i+di,j+dj); %该递归不会呈现炸弹，因为围绕（i,j）格子无炸弹
+                end
+            end
+        end
+    end
+
+    function result=win
+        for i=1:rows
+            for j=1:cols
+                if minemap(i,j)~=-1 && statemap(i,j)~=1 %取≠-1可以减少循环次数
+                    if isequal((statemap==2),(minemap==-1))%当所有地雷被正确标记时
+                        result=true;
+                        return;
+                    end
+                    result=false;
+                    return;
+                end
+            end
+        end
+        result=true;
+    end
+    
+end
+minesweepr
