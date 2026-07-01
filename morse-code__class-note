@@ -1,0 +1,55 @@
+function morse
+end
+
+function [output] = decode(dd)
+    m=morse;
+    n=length(dd);
+    for k=1:n
+        if dd(k)=='.'
+            m=m{2};
+        elseif dd(k)=='-'
+            m=m{3};
+        else
+            output='';
+            error('empty')
+        end
+    end
+    output=m{1};
+end
+
+function morse_broad
+%对二叉树的广度优先搜索（先进先出）
+    m=morse;
+    s={m};
+    d={''};
+    while ~isempty(s)
+        node=s{1};
+        node_code=d{1};
+        s=s{2:end};
+        d=d{2:end};
+        if ~isempty(node)
+            if node{1}==output
+                dd=node_code;
+                return;
+            else
+            %fprintf('%s\n',node{1});
+            s=[s,node(2),node(3)];
+            d=[d,{[node_code,'.']},{[node_code,'-']}];
+            end
+        end
+    end
+end
+
+function morse_deep
+%对二叉树的深度优先搜索（先进后出）
+    m=morse;
+    s={m};
+    while ~isempty(s)
+        node=s(end);
+        s=s{1:end-1};
+        if ~isempty(node)
+            fprintf('%s\n',node{1});
+            s=[s,node(3),node(2)];
+        end
+    end
+end
