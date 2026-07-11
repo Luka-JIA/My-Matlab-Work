@@ -1,0 +1,42 @@
+pic=imread('jpg');
+map=[1,2,1;0,0,0;-1,-2,-1];
+[m,n]=size(pic);
+p=zeros(m+2,n+2);
+p(2:end-1,2:end-1)=pic(:,:);
+[a,b]=size(p);
+c=zeros(m,n);
+for k1=2:a-1
+    for k2=2:b-1
+        count=0;
+        for k3=-1:1
+            count=count+p(k1-1,k2+k3).*map(1,k3+2);
+            count=count+p(k1+1,k2+k3).*map(3,k3+2);
+            c(k1-1,k2-1)=count;
+        end
+    end
+end
+pic1=uint8(p(2:end-1,2:end-1)-c(:,:));
+subplot(1,2,1);
+imshow(pic);
+subplot(1,2,2);
+imshow(pic1);
+
+
+##better method
+B=[1 2 1;0 0 0;-1 -2 -1];
+[m,n,z]=size(A);
+A1=zeros(m+2,n+2,z+2);
+A1(2:m+1,2:n+1,2:z+1)=A;
+C=zeros(m,n,z);
+for k1=2:m+1
+    for k2=2:n+1
+        for k3=2:z+1
+            C(k1-1,k2-1,k3-1)=sum(sum(A1(k1-1:k1+1,k2-1:k2+1,k3-1:k3+1).*B));
+        end
+    end
+end
+a=uint8(double(A)-C);
+subplot(1,2,1)
+imshow(A);
+subplot(1,2,2)
+imshow(a);
